@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鼠餌盒巡檢</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: #1a6fb5;
+    color: #fff;
+    padding: 16px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-header svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+  .card-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  label {
+    font-size: 13px;
+    color: #444;
+    font-weight: 500;
+  }
+
+  .readonly-field {
+    background: #f0f7ff;
+    border: 1.5px solid #a8cdf0;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    color: #1a6fb5;
+    font-weight: 500;
+  }
+
+  .chip-group { display: flex; flex-direction: column; gap: 8px; }
+
+  .chip {
+    border: 1.5px solid #d0d5dd;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+  }
+
+  .chip-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid #ccc;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .chip:hover { border-color: #1a6fb5; color: #1a6fb5; }
+  .chip:hover .chip-dot { border-color: #1a6fb5; }
+
+  .chip.selected-green {
+    background: #e8f5e9;
+    border-color: #4caf50;
+    color: #2e7d32;
+    font-weight: 600;
+  }
+
+  .chip.selected-blue {
+    background: #e3f0fb;
+    border-color: #1a6fb5;
+    color: #1a6fb5;
+    font-weight: 600;
+  }
+
+  .chip.selected-amber {
+    background: #fff8e1;
+    border-color: #f9a825;
+    color: #b37a00;
+    font-weight: 600;
+  }
+
+  .chip.selected-red {
+    background: #fdecea;
+    border-color: #e53935;
+    color: #c62828;
+    font-weight: 600;
+  }
+
+  .photo-btn {
+    border: 1.5px dashed #c0cdd8;
+    border-radius: 10px;
+    background: #f9fbfc;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .photo-btn:hover { border-color: #1a6fb5; background: #f0f7ff; }
+
+  .photo-btn svg { width: 28px; height: 28px; color: #7a90a4; }
+
+  .photo-btn span { font-size: 13px; color: #7a90a4; }
+
+  .photo-preview { display: none; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+
+  .photo-thumb {
+    width: 72px; height: 72px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1.5px solid #d0d5dd;
+  }
+
+  #photo-input { display: none; }
+
+  textarea {
+    border: 1.5px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    color: #333;
+    transition: border-color 0.15s;
+    outline: none;
+    width: 100%;
+  }
+  textarea:focus { border-color: #1a6fb5; }
+
+  .submit-btn {
+    background: #1a6fb5;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s, transform 0.1s;
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .submit-btn:hover { background: #155fa0; }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn svg { width: 18px; height: 18px; }
+
+  .footer-note {
+    text-align: center;
+    font-size: 12px;
+    color: #aaa;
+    padding: 0 20px 16px;
+  }
+
+  /* Success screen */
+  .success-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .success-header {
+    background: #2e7d32;
+    color: #fff;
+    padding: 16px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .success-header svg { width: 20px; height: 20px; }
+
+  .success-body {
+    padding: 32px 20px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .success-icon {
+    width: 60px; height: 60px;
+    background: #e8f5e9;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .success-icon svg { width: 32px; height: 32px; color: #2e7d32; }
+
+  .success-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #222;
+  }
+
+  .success-info {
+    background: #f6f8fa;
+    border-radius: 10px;
+    padding: 14px 18px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .success-info .row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+
+  .success-info .row .key { color: #888; }
+  .success-info .row .val { color: #222; font-weight: 500; }
+
+  .back-btn {
+    background: transparent;
+    color: #1a6fb5;
+    border: 1.5px solid #1a6fb5;
+    border-radius: 10px;
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 4px;
+  }
+
+  .back-btn:hover { background: #f0f7ff; }
+
+  .chip-icon { font-size: 14px; flex-shrink: 0; }
+
+  input[type="text"] {
+    border: 1.5px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #333;
+    transition: border-color 0.15s;
+    outline: none;
+    width: 100%;
+  }
+  input[type="text"]:focus { border-color: #1a6fb5; }
+  input[type="text"]::placeholder { color: #aab0b8; }
+
+  .required { color: #e53935; margin-left: 2px; }
+  .error-msg { font-size: 12px; color: #e53935; display: none; margin-top: 2px; }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #1a1f26; }
+    .card { background: #242b35; box-shadow: 0 2px 20px rgba(0,0,0,0.4); }
+    label { color: #c0c8d4; }
+    .readonly-field { background: #1c3050; border-color: #2c5080; color: #7ab8f0; }
+    .chip { background: #2c3440; border-color: #3a4558; color: #c0c8d4; }
+    .chip:hover { border-color: #7ab8f0; color: #7ab8f0; }
+    .photo-btn { background: #2c3440; border-color: #3a4558; }
+    .photo-btn span { color: #8090a4; }
+    textarea { background: #2c3440; border-color: #3a4558; color: #e0e6f0; }
+    textarea:focus { border-color: #5090d0; }
+    input[type="text"] { background: #2c3440; border-color: #3a4558; color: #e0e6f0; }
+    input[type="text"]:focus { border-color: #5090d0; }
+    .footer-note { color: #606878; }
+    .success-body { background: #242b35; }
+    .success-info { background: #2c3440; }
+    .success-info .row .key { color: #8090a4; }
+    .success-info .row .val { color: #e0e6f0; }
+    .success-title { color: #e0e6f0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card" id="main-card">
+
+  <!-- Form screen -->
+  <div id="form-screen">
+    <div class="card-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 12 2 2 4-4"/></svg>
+      鼠餌盒巡檢
+    </div>
+
+    <div class="card-body">
+
+      <div class="field">
+        <label>車站</label>
+        <div class="readonly-field" id="display-station">BL01 板橋站（自動帶入）</div>
+      </div>
+
+      <div class="field">
+        <label>鼠餌盒編號</label>
+        <div class="readonly-field" id="display-box">B1F-03（自動帶入）</div>
+      </div>
+
+      <div class="field" id="field-status">
+        <label>巡檢狀態<span class="required">*</span></label>
+        <div class="chip-group" id="chips-status">
+          <div class="chip" data-value="正常（無取食痕跡）" data-color="green" onclick="selectChip(this,'chips-status')">
+            <span class="chip-icon">✓</span>正常（無取食痕跡）
+          </div>
+          <div class="chip" data-value="正常（有取食痕跡，已補充老鼠藥）" data-color="blue" onclick="selectChip(this,'chips-status')">
+            <span class="chip-icon">🐭</span>正常（有取食痕跡，已補充老鼠藥）
+          </div>
+          <div class="chip" data-value="餌站遭移位／壓損" data-color="amber" onclick="selectChip(this,'chips-status')">
+            <span class="chip-icon">⚠️</span>餌站遭移位／壓損
+          </div>
+          <div class="chip" data-value="餌站遺失／需補發" data-color="amber" onclick="selectChip(this,'chips-status')">
+            <span class="chip-icon">📦</span>餌站遺失／需補發
+          </div>
+          <div class="chip" data-value="現場發現鼠屍／異味處理" data-color="red" onclick="selectChip(this,'chips-status')">
+            <span class="chip-icon">🚨</span>現場發現鼠屍／異味處理
+          </div>
+        </div>
+        <div class="error-msg" id="err-status">請選擇巡檢狀態</div>
+      </div>
+
+
+      <div class="field">
+        <label>現場照片</label>
+        <div class="photo-btn" onclick="document.getElementById('photo-input').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span id="photo-label">拍照上傳</span>
+        </div>
+        <div class="photo-preview" id="photo-preview"></div>
+        <input type="file" id="photo-input" accept="image/*" capture="environment" multiple onchange="handlePhoto(this)">
+      </div>
+
+      <div class="field" id="field-inspector">
+        <label>巡檢人員姓名<span class="required">*</span></label>
+        <input type="text" id="inspector" placeholder="請輸入姓名" autocomplete="name">
+        <div class="error-msg" id="err-inspector">請填寫巡檢人員姓名</div>
+      </div>
+
+      <div class="field">
+        <label>備註</label>
+        <textarea id="note" rows="2" placeholder="選填，補充說明..."></textarea>
+      </div>
+
+      <button class="submit-btn" onclick="submitForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        送出紀錄
+      </button>
+    </div>
+    <div class="footer-note">填寫巡檢表單</div>
+  </div>
+
+  <!-- Success screen -->
+  <div id="success-screen" class="success-screen">
+    <div class="success-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      送出成功
+    </div>
+    <div class="success-body">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="success-title">巡檢紀錄已上傳</div>
+      <div class="success-info" id="success-info"></div>
+      <button class="back-btn" onclick="resetForm()">繼續巡檢下一個</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const station = params.get('station') || 'BL01 板橋站';
+  const box     = params.get('box')     || 'B1F-03';
+
+  document.getElementById('display-station').textContent = station + '（自動帶入）';
+  document.getElementById('display-box').textContent     = box + '（自動帶入）';
+
+  let photoCount = 0;
+  const selected = { status: '' };
+
+  function selectChip(el, groupId) {
+    document.querySelectorAll('#' + groupId + ' .chip').forEach(c => {
+      c.className = 'chip';
+    });
+    const color = el.dataset.color;
+    el.classList.add('selected-' + color);
+    if (groupId === 'chips-status') selected.status = el.dataset.value;
+    if (groupId === 'chips-bait')   selected.bait   = el.dataset.value;
+  }
+
+  function handlePhoto(input) {
+    const files = Array.from(input.files);
+    if (!files.length) return;
+    photoCount += files.length;
+    const preview = document.getElementById('photo-preview');
+    preview.style.display = 'flex';
+    files.forEach(f => {
+      const img = document.createElement('img');
+      img.className = 'photo-thumb';
+      img.src = URL.createObjectURL(f);
+      preview.appendChild(img);
+    });
+    document.getElementById('photo-label').textContent = '已選 ' + photoCount + ' 張，點擊繼續新增';
+  }
+
+  function submitForm() {
+    let valid = true;
+
+    if (!selected.status) {
+      document.getElementById('err-status').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('err-status').style.display = 'none';
+    }
+    const inspector = document.getElementById('inspector').value.trim();
+    if (!inspector) {
+      document.getElementById('err-inspector').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('err-inspector').style.display = 'none';
+    }
+    if (!valid) return;
+
+    const now = new Date();
+    const ts = now.getFullYear() + '/' +
+      String(now.getMonth()+1).padStart(2,'0') + '/' +
+      String(now.getDate()).padStart(2,'0') + ' ' +
+      String(now.getHours()).padStart(2,'0') + ':' +
+      String(now.getMinutes()).padStart(2,'0');
+
+    const baitText = selected.bait === '需補充' ? '已補充完成' : selected.bait;
+
+    document.getElementById('success-info').innerHTML = `
+      <div class="row"><span class="key">地點</span><span class="val">${station} ${box}</span></div>
+      <div class="row"><span class="key">時間</span><span class="val">${ts}</span></div>
+      <div class="row"><span class="key">巡檢人員</span><span class="val">${inspector}</span></div>
+      <div class="row"><span class="key">狀態</span><span class="val">${selected.status}</span></div>
+      <div class="row"><span class="key">照片</span><span class="val">${photoCount > 0 ? photoCount + ' 張已上傳' : '未上傳'}</span></div>
+    `;
+
+    document.getElementById('form-screen').style.display = 'none';
+    const ss = document.getElementById('success-screen');
+    ss.style.display = 'flex';
+  }
+
+  function resetForm() {
+    selected.status = '';
+    photoCount = 0;
+    document.querySelectorAll('.chip').forEach(c => c.className = 'chip');
+    document.getElementById('note').value = '';
+    document.getElementById('inspector').value = '';
+    document.getElementById('photo-preview').innerHTML = '';
+    document.getElementById('photo-preview').style.display = 'none';
+    document.getElementById('photo-label').textContent = '拍照上傳';
+    document.getElementById('photo-input').value = '';
+    document.getElementById('success-screen').style.display = 'none';
+    document.getElementById('form-screen').style.display = 'block';
+  }
+</script>
+</body>
+</html>
